@@ -10,11 +10,17 @@
 #   - Build with Dockerfile.gpu (NVIDIA CUDA base image)
 #   - Attach GPU devices to both services because video generation can run in
 #     either the WebUI process or the API process
+#
+# Ports / hosts are inherited from docker-compose.yml via env:
+#   MPT_WEBUI_HOST, MPT_WEBUI_PORT, MPT_WEBUI_CONTAINER_PORT
+#   MPT_API_HOST, MPT_API_PORT, MPT_API_CONTAINER_PORT
 services:
   webui:
     build:
       context: .
       dockerfile: Dockerfile.gpu
+    ports:
+      - "${MPT_WEBUI_HOST:-127.0.0.1}:${MPT_WEBUI_PORT:-8501}:${MPT_WEBUI_CONTAINER_PORT:-8501}"
     deploy:
       resources:
         reservations:
@@ -26,6 +32,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.gpu
+    ports:
+      - "${MPT_API_HOST:-127.0.0.1}:${MPT_API_PORT:-8081}:${MPT_API_CONTAINER_PORT:-8080}"
     deploy:
       resources:
         reservations:

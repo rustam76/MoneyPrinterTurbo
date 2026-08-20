@@ -276,6 +276,10 @@ docker compose -f docker-compose.release.yml up
 
 打开浏览器，访问 http://127.0.0.1:8080/docs 或者 http://127.0.0.1:8080/redoc
 
+#### 可选身份认证
+
+默认关闭认证。如需启用生产级登录 / RBAC（PostgreSQL），参见 [docs/authentication.md](docs/authentication.md)（通过 `DATABASE_URL` 配置；首个管理员在 `/setup` 创建，**没有**管理员密码环境变量）。
+
 ### 手动部署 📦
 
 > 视频教程

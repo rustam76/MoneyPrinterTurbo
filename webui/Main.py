@@ -485,6 +485,13 @@ def _initialize_session_state():
 
 _initialize_session_state()
 
+# Optional authentication gate (MPT_AUTH_ENABLED). When disabled, behavior is unchanged.
+from webui.auth_gate import render_logout_button, require_webui_auth
+
+_mpt_auth_user = require_webui_auth()
+if _mpt_auth_user is not None:
+    render_logout_button()
+
 
 def tr(key):
     loc = locales.get(st.session_state["ui_language"], {})

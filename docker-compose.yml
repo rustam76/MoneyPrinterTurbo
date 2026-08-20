@@ -1,6 +1,15 @@
 x-common-volumes: &common-volumes
   - ./:/MoneyPrinterTurbo
 
+x-auth-env: &auth-env
+  MPT_AUTH_ENABLED: ${MPT_AUTH_ENABLED:-false}
+  DATABASE_URL: ${DATABASE_URL:-}
+  MPT_SESSION_SECRET: ${MPT_SESSION_SECRET:-}
+  MPT_SESSION_EXPIRE_HOURS: ${MPT_SESSION_EXPIRE_HOURS:-24}
+  MPT_COOKIE_SECURE: ${MPT_COOKIE_SECURE:-false}
+  MPT_PUBLIC_API_URL: ${MPT_PUBLIC_API_URL:-}
+  MPT_PUBLIC_WEBUI_URL: ${MPT_PUBLIC_WEBUI_URL:-}
+
 services:
   webui:
     build:
@@ -8,8 +17,20 @@ services:
       dockerfile: Dockerfile
     container_name: "moneyprinterturbo-webui"
     ports:
-      - "127.0.0.1:8501:8501"
-    command: [ "streamlit", "run", "./webui/Main.py", "--server.address=0.0.0.0", "--server.port=8501", "--browser.serverAddress=127.0.0.1", "--server.enableCORS=True", "--browser.gatherUsageStats=False", "--client.toolbarMode=minimal", "--logger.hideWelcomeMessage=True", "--server.showEmailPrompt=False" ]
+      - "${MPT_WEBUI_HOST:-127.0.0.1}:${MPT_WEBUI_PORT:-8501}:${MPT_WEBUI_CONTAINER_PORT:-8501}"
+    environment: *auth-env
+    command:
+      - streamlit
+      - run
+      - ./webui/Main.py
+      - "--server.address=0.0.0.0"
+      - "--server.port=${MPT_WEBUI_CONTAINER_PORT:-8501}"
+      - "--browser.serverAddress=${MPT_WEBUI_HOST:-127.0.0.1}"
+      - "--server.enableCORS=True"
+      - "--browser.gatherUsageStats=False"
+      - "--client.toolbarMode=minimal"
+      - "--logger.hideWelcomeMessage=True"
+      - "--server.showEmailPrompt=False"
     volumes: *common-volumes
     restart: always
   api:
@@ -18,7 +39,8 @@ services:
       dockerfile: Dockerfile
     container_name: "moneyprinterturbo-api"
     ports:
-      - "127.0.0.1:8081:8080"
+      - "${MPT_API_HOST:-127.0.0.1}:${MPT_API_PORT:-8081}:${MPT_API_CONTAINER_PORT:-8080}"
+    environment: *auth-env
     command: [ "python3", "main.py" ]
     volumes: *common-volumes
     restart: always

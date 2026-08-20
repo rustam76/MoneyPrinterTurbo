@@ -9,17 +9,34 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.auth.errors import AuthError
+from app.auth.middleware import AuthMiddleware
+from app.auth.migrate import run_auth_migrations
+from app.auth.settings import is_auth_enabled
 from app.config import config
 from app.models.exception import HttpException
 from app.router import root_api_router
 from app.utils import utils
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        return response
+
+
 @asynccontextmanager
 async def application_lifespan(_: FastAPI):
     """集中处理 API 进程启动恢复和关闭日志。"""
     logger.info("startup event")
+
+    if is_auth_enabled():
+        run_auth_migrations()
 
     # 跨平台发布由当前进程线程池执行，不会在服务重启后恢复。启动时把 Redis
     # 中确认已失去执行进程的活动状态收敛为失败，避免任务永久无法删除。
@@ -48,6 +65,13 @@ def validation_exception_handler(request: Request, e: RequestValidationError):
     )
 
 
+def auth_exception_handler(request: Request, e: AuthError):
+    return JSONResponse(
+        status_code=e.status_code,
+        content=utils.get_response(e.status_code, None, e.message),
+    )
+
+
 def get_application() -> FastAPI:
     """Initialize FastAPI application.
 
@@ -65,6 +89,7 @@ def get_application() -> FastAPI:
     instance.include_router(root_api_router)
     instance.add_exception_handler(HttpException, exception_handler)
     instance.add_exception_handler(RequestValidationError, validation_exception_handler)
+    instance.add_exception_handler(AuthError, auth_exception_handler)
     return instance
 
 
@@ -80,6 +105,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(AuthMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 task_dir = utils.task_dir()
 app.mount(

@@ -269,6 +269,10 @@ Open your browser and visit http://127.0.0.1:8501
 
 Open your browser and visit http://127.0.0.1:8080/docs or http://127.0.0.1:8080/redoc
 
+#### Optional authentication
+
+Authentication is **off by default**. To enable production login / RBAC with PostgreSQL, see [docs/authentication.md](docs/authentication.md) (Coolify-friendly `DATABASE_URL` + `/setup` for the first admin — no admin password env vars).
+
 ### Manual Deployment 📦
 
 #### ① Create a Python Virtual Environment
